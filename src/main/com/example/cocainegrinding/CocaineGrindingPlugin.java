@@ -76,6 +76,41 @@ public class CocaineGrindingPlugin extends JavaPlugin implements Listener {
     }
 
     @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        Block block = event.getClickedBlock();
+
+        if (block != null && block.getType() == Material.FERN && isCocainePlant(block)) {
+            if (block.getRelative(0, -1, 0).getType() == Material.PODZOL) {
+                // Oogst de plant en geef de Cocaïneplant aan de speler
+                ItemStack cocainePlant = new ItemStack(Material.FERN, 1);
+                ItemMeta meta = cocainePlant.getItemMeta();
+                if (meta != null) {
+                    meta.setDisplayName(ChatColor.WHITE + "Cocaïneplant");
+                    cocainePlant.setItemMeta(meta);
+                }
+                player.getInventory().addItem(cocainePlant);
+                player.sendMessage(ChatColor.GREEN + "Je hebt een cocaïneplant geoogst!");
+
+                // Verwijder de plant tijdelijk en laat hem teruggroeien
+                block.setType(Material.AIR);
+
+                // Toon bericht in beeld
+                Bukkit.broadcastMessage(ChatColor.YELLOW + player.getName() + " heeft een Cocaïneplant geoogst!");
+
+                // Plant groeit terug na 5 minuten
+                long growTime = 6000L; // 5 minuten in ticks (1 minuut = 1200 ticks)
+                Bukkit.getScheduler().runTaskLater(this, () -> {
+                    block.setType(Material.FERN);
+                    player.sendMessage(ChatColor.YELLOW + "Een cocaïneplant is opnieuw gegroeid.");
+                }, growTime);
+            } else {
+                player.sendMessage(ChatColor.RED + "Je kunt de Cocaïneplant alleen op Podzol oogsten!");
+            }
+        }
+    }
+
+    @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         if (!isInCokeRegion(event.getPlayer())) {
             event.getPlayer().sendMessage(ChatColor.RED + "Je bevindt je niet in een toegestane cocaïne locatie!");
@@ -106,6 +141,29 @@ public class CocaineGrindingPlugin extends JavaPlugin implements Listener {
                 speler.sendMessage(ChatColor.YELLOW + "Een cocaïneplant is opnieuw gegroeid.");
             }, growTime);
         }
+    }
+
+    private String locatieNaarString(Location location) {
+        return "Wereld: " + location.getWorld().getName() + ", X: " + location.getBlockX() + ", Y: " + location.getBlockY() + ", Z: " + location.getBlockZ();
+    }
+
+    public boolean isCocainePlant(Block block) {
+        // Controleer of de plant op de juiste locatie staat
+        return cocainePlantLocations.contains(block.getLocation());
+    }
+
+    public boolean isInCokeRegion(Player player) {
+        com.sk89q.worldedit.util.Location wgLocation = BukkitAdapter.adapt(player.getLocation());
+        RegionManager regionManager = WorldGuardPlugin.inst().getRegionManager(player.getWorld());
+        if (regionManager != null) {
+            ApplicableRegionSet regions = regionManager.getApplicableRegions(wgLocation);
+            for (ProtectedRegion region : regions) {
+                if (region.getId().equalsIgnoreCase("coke_location")) { // Vervang "coke_location" door jouw region-naam
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public void convertCocaineLeaves(Player player) {
@@ -157,24 +215,6 @@ public class CocaineGrindingPlugin extends JavaPlugin implements Listener {
         } else {
             player.sendMessage(ChatColor.RED + "Je hebt geen Cocaine om te verkopen!");
         }
-    }
-
-    private String locatieNaarString(Location location) {
-        return "Wereld: " + location.getWorld().getName() + ", X: " + location.getBlockX() + ", Y: " + location.getBlockY() + ", Z: " + location.getBlockZ();
-    }
-
-    public boolean isInCokeRegion(Player player) {
-        com.sk89q.worldedit.util.Location wgLocation = BukkitAdapter.adapt(player.getLocation());
-        RegionManager regionManager = WorldGuardPlugin.inst().getRegionManager(player.getWorld());
-        if (regionManager != null) {
-            ApplicableRegionSet regions = regionManager.getApplicableRegions(wgLocation);
-            for (ProtectedRegion region : regions) {
-                if (region.getId().equalsIgnoreCase("coke_location")) { // Vervang "coke_location" door jouw region-naam
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     public class CokeProcessingTrait extends Trait {

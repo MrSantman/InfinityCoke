@@ -1,7 +1,9 @@
 name: CocaineGrindingPlugin
-version: 1.0
+version: 1.3
 main: com.example.cocainegrinding.CocaineGrindingPlugin
 api-version: 1.12
+depend: [WorldGuard]
+softdepend: [Citizens]
 commands:
   setcocainelocation:
     description: Stel een locatie in voor cocaïneplanten.
